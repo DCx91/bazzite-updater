@@ -5,6 +5,8 @@
 
 #include <qcontainerfwd.h>
 #include <qjsengine.h>
+#include <qjsonarray.h>
+#include <qjsonvalue.h>
 #include <qobject.h>
 #include <qqmlengine.h>
 #include <qqmlintegration.h>
@@ -24,6 +26,8 @@ inline size_t qHash(const QVariant &key, size_t seed = 0) noexcept
 }
 
 using QVariantSet = QSet<QVariant>;
+
+QVariantList setToList(const QVariantSet &set);
 
 // Each QVariant in targets is: { url, name, features[], tags[] }
 
@@ -60,14 +64,25 @@ public:
     Q_SIGNAL void filteredChanged();
     void updateFiltered();
 
-    // TODO
+    // Current image obtained from the list of rebase targets, or image-info.json as a fallback
+    QVariant currentImage;
+    Q_PROPERTY(QVariant currentImage MEMBER currentImage CONSTANT)
+
     // QVariantSet all_features;
-    // QVariantSet current_image_features;
+    QVariantSet current_image_features;
+    Q_PROPERTY(QVariantList currentFeatures READ currentFeatures CONSTANT)
+    QVariantList currentFeatures() const
+    {
+        return setToList(current_image_features);
+    }
 
     // change this to update filtered
     QVariantSet m_features;
     Q_PROPERTY(QVariantList features READ features WRITE setFeatures NOTIFY featuresChanged)
-    QVariantList features() const;
+    QVariantList features() const
+    {
+        return setToList(m_features);
+    }
     void setFeatures(QVariantList val);
     Q_SIGNAL void featuresChanged();
 };
