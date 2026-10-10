@@ -73,6 +73,24 @@ class OtherUtilsBackend : public QObject
     QML_ELEMENT
     QML_SINGLETON
 
+    Q_DISABLE_COPY_MOVE(OtherUtilsBackend)
+    OtherUtilsBackend(QObject *parent = nullptr);
+
+public: // singleton methods
+    static OtherUtilsBackend *instance()
+    {
+        static OtherUtilsBackend *s_instance = new OtherUtilsBackend();
+        return s_instance;
+    }
+
+    static OtherUtilsBackend *create(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
+    {
+        Q_UNUSED(jsEngine)
+        OtherUtilsBackend *instancePtr = instance();
+        qmlEngine->setObjectOwnership(instancePtr, QQmlEngine::CppOwnership);
+        return instancePtr;
+    }
+
     Q_PROPERTY(osImage currentImage READ currentImage CONSTANT)
     Q_PROPERTY(Console::Model *consoleModel MEMBER m_console CONSTANT)
 
@@ -90,8 +108,6 @@ class OtherUtilsBackend : public QObject
     void checkLayeredPackages();
 
 public:
-    OtherUtilsBackend(QObject *parent = nullptr);
-
     osImage currentImage() const
     {
         return m_osImage_current;
@@ -111,3 +127,4 @@ public:
 
     Console::Model *m_console;
 };
+inline auto otherUtilsBackend = OtherUtilsBackend::instance();

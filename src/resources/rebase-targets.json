@@ -5,52 +5,52 @@
             {
                 "name": "bazzite",
                 "features": ["kde"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-deck",
                 "features": ["kde", "gamemode"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-nvidia",
                 "features": ["kde", "nvidia-legacy"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-nvidia-open",
                 "features": ["kde", "nvidia"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-deck-nvidia",
                 "features": ["kde", "gamemode", "nvidia"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-gnome",
                 "features": ["gnome"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-gnome-nvidia",
                 "features": ["gnome", "nvidia-legacy"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-gnome-nvidia-open",
                 "features": ["gnome", "nvidia"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-deck-gnome",
                 "features": ["gnome", "gamemode"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-deck-nvidia-gnome",
                 "features": ["gnome", "gamemode", "nvidia"],
-                "tags": ["stable", "testing", "unstable"]
+                "tags": ["stable", "testing"]
             },
             {
                 "name": "bazzite-dx",
