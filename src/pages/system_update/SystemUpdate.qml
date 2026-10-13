@@ -66,6 +66,13 @@ Kirigami.Page {
                     showPassiveNotification(i18n("Update Succeeded!"), Kirigami.short);
                     sessionStorage.updateCompleted = true;
                     sessionStorage.mainText = i18n("System Updated!");
+
+                    AppData.reloadOstree(() => {
+                        if (!AppData.ostree.onLatestDeployment())
+                            showPassiveNotification(i18n("You must reboot to apply changes."), Kirigami.short);
+                        else
+                            showPassiveNotification(i18n("No reboot necessary."), Kirigami.short);
+                    });
                 });
             }
         },

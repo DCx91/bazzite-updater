@@ -5,9 +5,51 @@ AppData::AppData(QObject *parent)
     : QObject(parent)
 {
     reloadOstree();
+    loadBestDrivers();
 };
 
-void AppData::reloadOstree()
+void AppData::loadBestDrivers()
+{
+    QtConcurrent::run([]() {
+        return GpuDrivers::load();
+    }).then(this, [this](GpuDrivers g) {
+        this->gpu = std::move(g);
+        Q_EMIT gpuChanged();
+    });
+}
+
+GpuDrivers GpuDrivers::load()
+{
+    const auto path = u"/usr/libexec/bazzite-detect-nvidia-support-status"_s;
+
+    if (!QFile::exists(path))
+        return {};
+
+    GpuDrivers result;
+
+    QProcess proc;
+
+    proc.start(path);
+    if (!proc.waitForFinished(15000) || proc.exitStatus() != QProcess::NormalExit || proc.exitCode() != 0)
+        return {};
+
+    QString output = QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
+
+    if (output == u"supported"_s)
+        result.best = Gpu::Drivers::NVIDIA_OPEN;
+    else if (output == u"legacy"_s)
+        result.best = Gpu::Drivers::NVIDIA;
+    else if (output == u"unsupported"_s)
+        result.best = Gpu::Drivers::UNSUPPORTED;
+    else if (output.isEmpty())
+        result.best = Gpu::Drivers::BASE;
+    else
+        result.best = Gpu::Drivers::UNKNOWN;
+
+    return result;
+}
+
+void AppData::reloadOstree(QJSValue callback)
 {
     if (ostreeLoading)
         return;
@@ -17,10 +59,12 @@ void AppData::reloadOstree()
         return Ostree::load();
     })
         .then(this,
-              [this](Ostree os) {
+              [this, callback](Ostree os) {
                   this->ostree = std::move(os);
                   Q_EMIT ostreeChanged();
                   this->ostreeLoading = false;
+                  if (callback.isCallable())
+                      callback.call();
               })
         .onCanceled(this, [this]() {
             this->ostreeLoading = false;

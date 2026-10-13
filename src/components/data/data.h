@@ -2,6 +2,7 @@
 
 #include <qguiapplication.h>
 #include <qjsengine.h>
+#include <qjsvalue.h>
 #include <qlist.h>
 #include <qmetaobject.h>
 #include <qobject.h>
@@ -13,8 +14,40 @@
 
 using namespace Qt::StringLiterals;
 
+namespace Gpu
+{
+Q_NAMESPACE
+QML_ELEMENT
+
+enum class Drivers {
+    UNKNOWN = -1,
+    BASE,
+    NVIDIA,
+    NVIDIA_OPEN,
+    UNSUPPORTED
+};
+
+Q_ENUM_NS(Drivers)
+}
+
+struct GpuDrivers {
+    Q_GADGET;
+    QML_VALUE_TYPE(gpu);
+
+public:
+    Gpu::Drivers best = Gpu::Drivers::UNKNOWN;
+    Q_PROPERTY(Gpu::Drivers best READ getBest CONSTANT)
+    Gpu::Drivers getBest() const
+    {
+        return best;
+    }
+
+    static GpuDrivers load();
+};
+
 struct OstreeDeployment {
     Q_GADGET;
+    QML_VALUE_TYPE(ostreeDeployment);
 
 public:
     QStringList layeredPackages;
@@ -39,17 +72,20 @@ public:
 
 struct Ostree {
     Q_GADGET;
+    QML_VALUE_TYPE(ostree);
 
 public:
     QList<OstreeDeployment> deployments;
     Q_PROPERTY(QList<OstreeDeployment> deployments READ getDeployments CONSTANT)
-    QList<OstreeDeployment> getDeployments() const
+    const QList<OstreeDeployment> &getDeployments() const
     {
         return deployments;
     }
     Q_INVOKABLE bool onLatestDeployment() const
     {
-        return deployments.last().isCurrent;
+        if (deployments.isEmpty())
+            return false;
+        return deployments.first().isCurrent;
     }
 
     static Ostree load();
@@ -82,13 +118,24 @@ public: // singleton methods
 
 public:
     Q_PROPERTY(Ostree ostree READ getOstree NOTIFY ostreeChanged)
-    Ostree getOstree() const
+    const Ostree &getOstree() const
     {
         return ostree;
     }
     Ostree ostree;
-    bool ostreeLoading;
-    Q_INVOKABLE void reloadOstree();
+    bool ostreeLoading = false;
+    Q_INVOKABLE void reloadOstree(QJSValue callback = QJSValue());
     Q_SIGNAL void ostreeChanged();
+
+    Q_PROPERTY(GpuDrivers gpu READ getGpu NOTIFY gpuChanged)
+    const GpuDrivers &getGpu() const
+    {
+        return gpu;
+    }
+    GpuDrivers gpu;
+    void loadBestDrivers();
+    Q_SIGNAL void gpuChanged();
 };
 inline static AppData *appData = AppData::instance();
+
+QJsonObject runJson(const QString &program, const QStringList &args);
