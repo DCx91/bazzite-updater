@@ -377,7 +377,7 @@ StatefulApp.StatefulWindow {
 
         subtitle: {
             if (!AppState.commandRunning)
-                return AppData.ostree.onLatestDeployment() ? i18n("You must reboot to apply changes.") : i18n("No command is running, you may exit.");
+                return !AppData.ostree.onLatestDeployment() ? i18n("You must reboot to apply system updates.") : i18n("No command is running, you may exit safely.");
 
             if (AppConfig.ini.Commands?.allowEarlyExit !== "true")
                 return i18n("You should not exit the application until the running command completes. If you exit early, it may break your system.");
