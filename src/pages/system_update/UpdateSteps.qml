@@ -33,6 +33,13 @@ ColumnLayout {
                 indeterminate: del.progress_current === -1
                 value: del.progress_current
                 to: del.progress_total
+
+                Behavior on value {
+                    NumberAnimation {
+                        duration: Kirigami.Units.longDuration
+                        easing.type: Easing.InOutQuad
+                    }
+                }
             }
 
             Loader {

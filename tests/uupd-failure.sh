@@ -11,5 +11,5 @@ sleep 1
 cat ./flatpak.txt
 sleep 1
 cat ./flatpak-user.txt
-sleep 0.2
+sleep 1
 exit 1
