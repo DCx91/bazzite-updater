@@ -16,6 +16,16 @@ Loader {
     Layout.fillWidth: true
 
     sourceComponent: FC.FormCard {
+        FC.FormTextDelegate {
+            id: stagedImageInfo
+            visible: !AppData.ostree.onLatestDeployment()
+            text: i18n("There is a pending system update. You must reboot to apply it.")
+            font.bold: true
+        }
+
+        FormDelegateSeparatorFixed {
+            visible: stagedImageInfo.visible
+        }
 
         FC.FormTextDelegate {
             textItem.wrapMode: Text.WordWrap
