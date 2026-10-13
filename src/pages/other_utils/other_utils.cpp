@@ -14,7 +14,7 @@
 #include <qprocess.h>
 #include <qtmetamacros.h>
 
-// Async is not necessary for this function (probably)
+// TODO: Move into AppData
 osImage osImage::fromJson(const QString &filePath)
 {
     QFile json_file(filePath);
@@ -77,7 +77,6 @@ OtherUtilsBackend::OtherUtilsBackend(QObject *parent)
     : QObject(parent)
 {
     m_console = new Console::Model(this);
-    best_driver = Gpu::Drivers::UNKNOWN;
 
     QString path;
     {
@@ -89,49 +88,6 @@ OtherUtilsBackend::OtherUtilsBackend(QObject *parent)
             path = u"/run/host/usr/share/ublue-os/image-info.json"_s;
     }
     m_osImage_current = osImage::fromJson(path);
-
-    setGpuDrivers();
-    checkLayeredPackages();
-}
-
-void OtherUtilsBackend::setGpuDrivers()
-{
-    const auto path = u"/usr/libexec/bazzite-detect-nvidia-support-status"_s;
-
-    if (!QFile::exists(path))
-        return;
-
-    QProcess *check_nvidia = new QProcess(this);
-
-    connect(check_nvidia, &QProcess::errorOccurred, [check_nvidia](QProcess::ProcessError err) {
-        qWarning() << u"setGpuDrivers error:"_s << err << check_nvidia->errorString();
-        check_nvidia->deleteLater();
-    });
-
-    connect(check_nvidia, &QProcess::finished, [this, check_nvidia]() {
-        if (check_nvidia->exitCode() != 0) {
-            return;
-        }
-
-        QString output = QString::fromUtf8(check_nvidia->readAllStandardOutput()).trimmed();
-
-        if (output == u"supported"_s)
-            best_driver = Gpu::Drivers::NVIDIA_OPEN;
-        else if (output == u"legacy"_s)
-            best_driver = Gpu::Drivers::NVIDIA;
-        else if (output == u"unsupported"_s)
-            best_driver = Gpu::Drivers::UNSUPPORTED;
-        else if (output.isEmpty())
-            best_driver = Gpu::Drivers::BASE;
-        else
-            best_driver = Gpu::Drivers::UNKNOWN;
-
-        Q_EMIT recommendedDriverChanged();
-        check_nvidia->deleteLater();
-        return;
-    });
-
-    Utils::startProcess(check_nvidia, {path});
 }
 
 // ROLLBACK
@@ -168,52 +124,4 @@ void OtherUtilsBackend::rollbackImage(QJSValue callback)
     };
 
     m_console->runProcess(cmd, onFinish, onError);
-}
-
-void OtherUtilsBackend::checkLayeredPackages()
-{
-    auto check = new QProcess(this);
-
-    connect(check, &QProcess::errorOccurred, [check](QProcess::ProcessError err) {
-        qWarning() << "checkLayeredPackages error:" << err << check->errorString();
-        check->deleteLater();
-    });
-
-    connect(check, &QProcess::finished, [this, check]() {
-        if (check->exitCode() != 0) {
-            check->deleteLater();
-            return;
-        }
-
-        QJsonArray deployments = QJsonDocument::fromJson(check->readAllStandardOutput()).object().value(u"deployments"_s).toArray();
-
-        for (const QJsonValue &depVal : deployments) {
-            QJsonObject depObj = depVal.toObject();
-
-            // if booted == true
-            if (depObj.value(u"booted"_s).toBool(false)) {
-                // Append "requested-packages"
-                const QJsonArray reqPkgs = depObj.value(u"requested-packages"_s).toArray();
-                for (const QJsonValue &pkg : reqPkgs) {
-                    m_layeredPackages.append(pkg.toString());
-                }
-
-                // Append "requested-local-packages"
-                const QJsonArray reqLocalPkgs = depObj.value(u"requested-local-packages"_s).toArray();
-                for (const QJsonValue &pkg : reqLocalPkgs) {
-                    m_layeredPackages.append(pkg.toString());
-                }
-
-                break; // Found current booted deployment
-            }
-        }
-
-        if (!m_layeredPackages.isEmpty()) {
-            Q_EMIT layeredPackagesChanged();
-        }
-        check->deleteLater();
-        return;
-    });
-
-    Utils::startProcess(check, {u"rpm-ostree"_s, u"status"_s, u"--json"_s});
 }

@@ -14,6 +14,6 @@ files=(
 for file in "${files[@]}"; do
     while IFS= read -r line || [[ -n "$line" ]]; do
         echo "$line"
-        sleep 0.1
+        sleep 0.02
     done < "$file"
 done

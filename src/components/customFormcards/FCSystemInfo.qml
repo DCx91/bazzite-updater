@@ -20,7 +20,6 @@ Loader {
         FC.FormTextDelegate {
             textItem.wrapMode: Text.WordWrap
             text: OtherUtilsBackend.currentImage.name + ":" + OtherUtilsBackend.currentImage.branch
-
             description: i18n("Current Image")
         }
 
@@ -34,58 +33,78 @@ Loader {
         }
 
         FormDelegateSeparatorFixed {
-            visible: OtherUtilsBackend.bestDriver != Gpu.Drivers.UNKNOWN
+            visible: driverInfo.visible
         }
 
-        Loader {
-            active: OtherUtilsBackend.bestDriver != Gpu.Drivers.UNKNOWN
-            Layout.fillWidth: true
+        FC.FormTextDelegate {
+            id: driverInfo
+            visible: AppData.gpu.best !== Gpu.Drivers.UNKNOWN
 
-            sourceComponent: FC.FormTextDelegate {
-                text: {
-                    switch (OtherUtilsBackend.bestDriver) {
-                    case Gpu.Drivers.BASE:
-                        return i18n("The best drivers for your GPU are provided by the Linux kernel.");
-                    case Gpu.Drivers.NVIDIA:
-                        return i18n("The best drivers for your GPU are ") + "nvidia.";
-                    case Gpu.Drivers.NVIDIA_OPEN:
-                        return i18n("The best drivers for your GPU are ") + "nvidia-open.";
-                    case Gpu.Drivers.UNSUPPORTED:
-                        return i18n("Your GPU is unsupported.");
-                    case Gpu.Drivers.UNKNOWN:
-                        return "";
-                    default:
-                        return "Report to the app developer if you see this!";
-                    }
+            text: {
+                switch (AppData.gpu.best) {
+                case Gpu.Drivers.BASE:
+                    return i18n("The best drivers for your GPU are provided by the Linux kernel.");
+                case Gpu.Drivers.NVIDIA:
+                    return i18n("The best drivers for your GPU are ") + "nvidia.";
+                case Gpu.Drivers.NVIDIA_OPEN:
+                    return i18n("The best drivers for your GPU are ") + "nvidia-open.";
+                case Gpu.Drivers.UNSUPPORTED:
+                    return i18n("Your GPU is unsupported.");
+                case Gpu.Drivers.UNKNOWN:
+                    return "";
+                default:
+                    return "Report to the app developer if you see this!";
                 }
+            }
 
-                readonly property int __current: {
-                    // Directly check for the few images that have the legacy drivers
-                    if (["bazzite-nvidia", "bazzite-gnome-nvidia"].includes(OtherUtilsBackend.currentImage.name))
-                        return Gpu.Drivers.NVIDIA;
-                    else if (OtherUtilsBackend.currentImage.name.includes("nvidia"))
-                        return Gpu.Drivers.NVIDIA_OPEN;
-                    else
-                        return Gpu.Drivers.BASE;
-                }
+            readonly property int __current: {
+                // Directly check for the few images that have the legacy drivers
+                if (["bazzite-nvidia", "bazzite-gnome-nvidia"].includes(OtherUtilsBackend.currentImage.name))
+                    return Gpu.Drivers.NVIDIA;
+                else if (OtherUtilsBackend.currentImage.name.includes("nvidia"))
+                    return Gpu.Drivers.NVIDIA_OPEN;
+                else
+                    return Gpu.Drivers.BASE;
+            }
 
-                description: {
-                    if (OtherUtilsBackend.bestDriver == __current)
-                        return i18n("You have the best drivers installed.");
+            description: {
+                if (AppData.gpu.best == __current)
+                    return i18n("You have the best drivers installed.");
 
-                    switch (__current) {
-                    case Gpu.Drivers.BASE:
-                        return i18n("You do not have any nvidia drivers installed.");
-                    case Gpu.Drivers.NVIDIA:
-                        return i18n("You currently have nvidia installed.");
-                    case Gpu.Drivers.NVIDIA_OPEN:
-                        return i18n("You currently have nvidia-open installed.");
-                    }
+                switch (__current) {
+                case Gpu.Drivers.BASE:
+                    return i18n("You do not have any nvidia drivers installed.");
+                case Gpu.Drivers.NVIDIA:
+                    return i18n("You currently have nvidia installed.");
+                case Gpu.Drivers.NVIDIA_OPEN:
+                    return i18n("You currently have nvidia-open installed.");
                 }
             }
         }
 
         FormDelegateSeparatorFixed {
+            visible: layeredPackagesInfo.visible
+            below: layeredPackagesInfo.itemBelowPrev
+        }
+
+        FormDelegateCollapsible {
+            id: layeredPackagesInfo
+
+            readonly property ostreeDeployment currentImage: AppData.ostree.deployments.find(img => img.isCurrent) || {}
+            readonly property int count: currentImage.layeredPackages?.length || 0
+
+            visible: count !== 0
+            text: expanded ? i18n("Close layered packages view") : i18n("View layered packages (%1)", count)
+
+            FC.FormTextAreaDelegate {
+                label: i18n("Layered Packages (%1):", layeredPackagesInfo.count)
+                readOnly: true
+                text: layeredPackagesInfo.currentImage.layeredPackages?.join(", ") ?? ""
+                description: i18n("Layering packages is a last-resort for when there is no other way to install a package. Avoid layering packages whenever possible, as it can cause system updates to fail.")
+            }
+        }
+        FormDelegateSeparatorFixed {
+            above: layeredPackagesInfo.visible ? layeredPackagesInfo.itemAboveNext : null
             below: detailedInfo.itemBelowPrev
         }
 
@@ -160,36 +179,6 @@ Loader {
             FC.FormTextDelegate {
                 text: OtherUtilsBackend.currentImage.datePretty["day"] + " " + OtherUtilsBackend.currentImage.datePretty["month"] + ", " + OtherUtilsBackend.currentImage.datePretty["year"] || i18n("loading...")
                 description: i18n("Release Date")
-            }
-        }
-
-        Loader {
-            id: layeredPackagesLoader
-            active: OtherUtilsBackend.layeredPackages.length != 0
-            Layout.fillWidth: true
-
-            sourceComponent: ColumnLayout {
-                spacing: 0
-                Layout.fillWidth: true
-
-                FormDelegateSeparatorFixed {
-                    above: detailedInfo.itemAboveNext
-                    below: layeredPackagesInfo.itemBelowPrev
-                }
-
-                FormDelegateCollapsible {
-                    id: layeredPackagesInfo
-                    text: expanded ? i18n("Close layered packages view") : i18n("View layered packages (%1)", OtherUtilsBackend.layeredPackages.length)
-
-                    FC.FormTextAreaDelegate {
-                        label: i18n("Layered Packages (%1):", OtherUtilsBackend.layeredPackages.length)
-                        readOnly: true
-
-                        text: OtherUtilsBackend.layeredPackages.join(", ")
-
-                        description: i18n("Layering packages is a last-resort for when there is no other way to install a package. Avoid layering packages whenever possible, as it can cause system updates to fail.")
-                    }
-                }
             }
         }
     }

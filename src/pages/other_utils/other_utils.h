@@ -18,22 +18,6 @@
 
 using namespace Qt::Literals::StringLiterals;
 
-namespace Gpu
-{
-Q_NAMESPACE
-QML_ELEMENT
-
-enum class Drivers {
-    UNKNOWN = -1,
-    BASE,
-    NVIDIA,
-    NVIDIA_OPEN,
-    UNSUPPORTED
-};
-
-Q_ENUM_NS(Drivers)
-}
-
 struct osImage {
     Q_GADGET
     QML_VALUE_TYPE(osImage)
@@ -94,30 +78,13 @@ public: // singleton methods
     Q_PROPERTY(osImage currentImage READ currentImage CONSTANT)
     Q_PROPERTY(Console::Model *consoleModel MEMBER m_console CONSTANT)
 
-    Q_PROPERTY(Gpu::Drivers bestDriver READ gpuDrivers NOTIFY recommendedDriverChanged)
-
-    Gpu::Drivers best_driver;
-
     osImage m_osImage_current;
-    void setGpuDrivers();
-
-    // Check for rpm-ostree layered packages
-    QStringList m_layeredPackages;
-    Q_PROPERTY(QStringList layeredPackages MEMBER m_layeredPackages NOTIFY layeredPackagesChanged)
-    Q_SIGNAL void layeredPackagesChanged();
-    void checkLayeredPackages();
 
 public:
     osImage currentImage() const
     {
         return m_osImage_current;
     }
-    Gpu::Drivers gpuDrivers() const
-    {
-        return best_driver;
-    }
-
-    Q_SIGNAL void recommendedDriverChanged();
 
     // ROLLBACK
     Q_INVOKABLE void rollbackImage(QJSValue callback);

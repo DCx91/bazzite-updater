@@ -245,7 +245,8 @@ StatefulApp.StatefulWindow {
                 shortcut: StandardKey.Quit
                 onTriggered: {
                     // A running command is always worth warning about, only the reminder is optional.
-                    if (AppState.commandRunning || (AppState.commandSucceeded && UserSettings.showRebootReminder)) {
+                    // TODO: improve logic for non-atomic systems
+                    if (AppState.commandRunning || (!AppData.ostree.onLatestDeployment() && UserSettings.showRebootReminder)) {
                         exitDialog.open();
                     } else
                         Qt.quit();
@@ -376,7 +377,7 @@ StatefulApp.StatefulWindow {
 
         subtitle: {
             if (!AppState.commandRunning)
-                return AppState.commandSucceeded ? i18n("You must reboot to apply changes.") : i18n("No command is running, you may exit.");
+                return AppData.ostree.onLatestDeployment() ? i18n("You must reboot to apply changes.") : i18n("No command is running, you may exit.");
 
             if (AppConfig.ini.Commands?.allowEarlyExit !== "true")
                 return i18n("You should not exit the application until the running command completes. If you exit early, it may break your system.");
