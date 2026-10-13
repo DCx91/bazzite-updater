@@ -45,6 +45,7 @@ find_package(Qt6 ${QT6_MIN_VERSION} REQUIRED COMPONENTS
     Svg
     Test
     DBus
+    Concurrent
 )
 
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS

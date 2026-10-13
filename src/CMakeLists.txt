@@ -26,6 +26,8 @@ target_sources(bazzite-updater
     ${PG_DIR}/other_utils/other_utils.cpp
     ${PG_DIR}/rebase_page/rebase_model.h
     ${PG_DIR}/rebase_page/rebase_model.cpp
+    ${COMP_DIR}/data/data.h
+    ${COMP_DIR}/data/data.cpp
     ${COMP_DIR}/console/console.h
     ${COMP_DIR}/console/console.cpp
     ${COMP_DIR}/kConfig/k_config.h
@@ -39,6 +41,7 @@ target_include_directories(bazzite-updater
     ${PG_DIR}/system_update
     ${PG_DIR}/other_utils
     ${PG_DIR}/rebase_page
+    ${COMP_DIR}/data
     ${COMP_DIR}/console
     ${COMP_DIR}/kConfig
 )
@@ -80,6 +83,7 @@ target_link_libraries(bazzite-updater
     Qt6::QuickControls2
     Qt6::Svg
     Qt6::DBus
+    Qt6::Concurrent
     KF6::I18n
     KF6::I18nQml
     KF6::IconThemes
