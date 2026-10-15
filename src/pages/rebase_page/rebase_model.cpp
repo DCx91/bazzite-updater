@@ -9,29 +9,40 @@
 #include <qjsonvalue.h>
 #include <qvariant.h>
 
+inline const QString KeyUrl = u"url"_s;
+inline const QString KeyName = u"name"_s;
+inline const QString KeyFeatures = u"features"_s;
+inline const QString KeyImages = u"images"_s;
+inline const QString KeyTags = u"tags"_s;
+
+// Only available for the Current system image
+inline const QString KeyCurrentTag = u"currentTag"_s;
+
 RebaseModel::RebaseModel()
 {
     for (const QVariant &item : appConfig()->rebaseTargets) {
         auto obj = item.toJsonObject();
 
-        auto imgs = obj.value(u"images"_s).toArray();
-        auto url = obj.value(u"url"_s).toString();
+        auto imgs = obj.value(KeyImages).toArray();
+        auto url = obj.value(KeyUrl).toString();
 
         // find the current image to store its features.
         // Incompatible images cannot be shown.
-        static bool currentFound = false;
+        bool currentFound = false;
         for (const QJsonValue &img : imgs) {
             auto imgObj = img.toObject();
 
-            auto imgName = imgObj.value(u"name"_s).toString();
-            auto imgFeatures = imgObj.value(u"features"_s).toArray();
+            auto imgName = imgObj.value(KeyName).toString();
+            auto imgFeatures = imgObj.value(KeyFeatures).toArray();
 
             if (otherUtilsBackend->currentImage().m_imageRef == u"%1/%2"_s.arg(url).arg(imgName)) {
                 for (const auto &feat : imgFeatures) {
                     current_image_features.insert(feat.toVariant());
                 }
+                imgObj.insert(KeyUrl, url);
+                imgObj.insert(KeyCurrentTag, otherUtilsBackend->currentImage().m_imageBranch);
                 currentFound = true;
-                currentImage = img;
+                currentImage = imgObj;
                 break;
             }
         }
@@ -41,15 +52,17 @@ RebaseModel::RebaseModel()
             QJsonObject obj;
             auto img = otherUtilsBackend->currentImage();
             int sep = img.m_imageRef.lastIndexOf(u'/');
-            obj.insert(u"url"_s, img.m_imageRef.left(sep));
-            obj.insert(u"name"_s, img.m_imageRef.right(sep));
-            obj.insert(u"tags"_s, QJsonArray({img.m_imageBranch}));
+            obj.insert(KeyUrl, img.m_imageRef.left(sep));
+            obj.insert(KeyName, img.m_imageRef.mid(sep + 1));
+            obj.insert(KeyTags, QJsonArray({img.m_imageBranch}));
+            obj.insert(KeyCurrentTag, img.m_imageBranch);
+            obj.insert(KeyFeatures, QJsonArray());
             currentImage = obj;
         }
 
         for (const QJsonValue &img : imgs) {
             auto imgObj = img.toObject();
-            auto imgFeatures = imgObj.value(u"features"_s).toArray();
+            auto imgFeatures = imgObj.value(KeyFeatures).toArray();
 
             if (currentFound) {
                 bool currentKde = current_image_features.contains(u"kde"_s);
@@ -62,7 +75,7 @@ RebaseModel::RebaseModel()
                     continue;
             }
 
-            imgObj.insert(u"url"_s, url);
+            imgObj.insert(KeyUrl, url);
             targets.append(imgObj);
         }
     }
@@ -102,7 +115,7 @@ void RebaseModel::updateFiltered()
             auto obj = img.toJsonObject();
 
             QVariantSet img_feats;
-            for (const QJsonValue &item : obj.value(u"features"_s).toArray()) {
+            for (const QJsonValue &item : obj.value(KeyFeatures).toArray()) {
                 img_feats.insert(item.toVariant());
             }
 

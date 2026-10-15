@@ -16,7 +16,6 @@ import io.github.rfrench3.controllable as GP
 // - improve controller support for selections. It can be navigated, but left/right should move to buttons to the left/right
 // - finish frontend
 // - begin/finish backend
-// - move all system image formcards to FCSystemImage
 
 AppPage {
     id: page
@@ -48,18 +47,21 @@ AppPage {
 
             FCSystemImage {
                 id: currentImage
-                url: OtherUtilsBackend.currentImage.ref
-                name: OtherUtilsBackend.currentImage.name
-                tags: [OtherUtilsBackend.currentImage.branch]
-                isCurrent: true
-                currentTag: OtherUtilsBackend.currentImage.branch
 
-                features: RebaseModel.currentFeatures
+                readonly property var image: RebaseModel.currentImage
 
+                url: image.url
+                name: image.name
+                tags: image.tags
+                features: image.features
+
+                currentTag: image.currentTag
+
+                // TODO: this is likely not necessary
                 // If the given image's features are compatible with the current one, return true.
                 // For example, this would return false when the current image has kde and the given one has gnome.
                 function compatibleImage(features: list<string>): bool {
-                    let currentFeatures = currentImage.features || [];
+                    let currentFeatures = image.features;
 
                     if (features.includes("gnome"))
                         return !currentFeatures.includes("kde");

@@ -13,7 +13,6 @@ FC.FormCard {
     required property string name
     required property list<string> features
     required property list<string> tags
-    property bool isCurrent: false
     property string currentTag: ""
 
     FormDelegateCollapsible {
