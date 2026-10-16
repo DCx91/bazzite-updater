@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "rebase_model.h"
+#include "console.h"
 #include "k_config.h"
 #include "other_utils.h"
+#include "utils.h"
 #include <qjsonarray.h>
 #include <qjsonobject.h>
 #include <qjsonvalue.h>
+#include <qjsvalue.h>
 #include <qvariant.h>
 
 inline const QString KeyUrl = u"url"_s;
@@ -18,8 +21,21 @@ inline const QString KeyTags = u"tags"_s;
 // Only available for the Current system image
 inline const QString KeyCurrentTag = u"currentTag"_s;
 
+// convert set to list
+QVariantList setToList(const QVariantSet &set)
+{
+    QVariantList list;
+    list.reserve(set.size());
+    for (const QVariant &item : set) {
+        list.append(item);
+    }
+    return list;
+}
+
 RebaseModel::RebaseModel()
 {
+    m_console = new Console::Model(this);
+
     for (const QVariant &item : appConfig()->rebaseTargets) {
         auto obj = item.toJsonObject();
 
@@ -36,9 +52,6 @@ RebaseModel::RebaseModel()
             auto imgFeatures = imgObj.value(KeyFeatures).toArray();
 
             if (otherUtilsBackend->currentImage().m_imageRef == u"%1/%2"_s.arg(url).arg(imgName)) {
-                for (const auto &feat : imgFeatures) {
-                    current_image_features.insert(feat.toVariant());
-                }
                 imgObj.insert(KeyUrl, url);
                 imgObj.insert(KeyCurrentTag, otherUtilsBackend->currentImage().m_imageBranch);
                 currentFound = true;
@@ -65,7 +78,9 @@ RebaseModel::RebaseModel()
             auto imgFeatures = imgObj.value(KeyFeatures).toArray();
 
             if (currentFound) {
-                bool currentKde = current_image_features.contains(u"kde"_s);
+                auto currentFeatures = currentImage.toJsonObject().value(KeyFeatures).toArray();
+
+                bool currentKde = currentFeatures.contains(u"kde"_s);
                 bool imgKde = imgFeatures.contains(u"kde"_s);
 
                 if (currentKde != imgKde)
@@ -81,17 +96,6 @@ RebaseModel::RebaseModel()
     }
 
     filtered = targets;
-}
-
-// convert set to list
-QVariantList setToList(const QVariantSet &set)
-{
-    QVariantList list;
-    list.reserve(set.size());
-    for (const QVariant &item : set) {
-        list.append(item);
-    }
-    return list;
 }
 
 void RebaseModel::setFeatures(QVariantList features)
@@ -126,4 +130,41 @@ void RebaseModel::updateFiltered()
     }
 
     Q_EMIT filteredChanged();
+}
+
+void RebaseModel::runRebase(QString image, QJSValue callback = QJSValue())
+{
+    if (!appState.allowCommands()) {
+        return;
+    }
+
+    auto onFinish = [=, this](int exit_code) {
+        const auto conclude = [=](int code, bool command) {
+            callback.call({code});
+            appState.setRebaseRunning(false);
+            appState.setCommandSucceeded(command);
+            return;
+        };
+
+        // Check for errors
+        if (exit_code != 0) {
+            conclude(1, false);
+            qWarning() << "Rebase failed with exit code " << exit_code;
+            m_console->newLine(u"The rebase has failed. Read the above output for more details."_s, Console::LogLevel::Error);
+            return;
+        }
+        conclude(0, true);
+    };
+
+    auto onError = [=](QProcess::ProcessError error) {
+        qWarning() << "Rebase errored with ProcessError " << error;
+        callback.call({1});
+        appState.setRebaseRunning(false);
+    };
+
+    appState.setRebaseRunning(true);
+
+    // TODO: potentially try the default "bazzite" password before prompting user, if possible?
+    // m_console->runProcess({u"run0"_s, u"bootc"_s, u"switch"_s, image}, onFinish, onError);
+    m_console->runProcess({u"sleep"_s, u"3"_s, u"&&"_s, u"echo"_s, image}, onFinish, onError);
 }

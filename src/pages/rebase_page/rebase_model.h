@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "console.h"
+
 #include <qcontainerfwd.h>
 #include <qjsengine.h>
 #include <qjsonarray.h>
@@ -56,6 +58,9 @@ public: // singleton methods
     }
 
 public:
+    Console::Model *m_console;
+    Q_PROPERTY(Console::Model *consoleModel MEMBER m_console CONSTANT)
+
     QVariantList targets;
     Q_PROPERTY(QVariantList targets MEMBER targets CONSTANT)
 
@@ -64,17 +69,11 @@ public:
     Q_SIGNAL void filteredChanged();
     void updateFiltered();
 
-    // Current image obtained from the list of rebase targets, or image-info.json as a fallback
+    // obtained from the list of rebase targets and image-info.json
     QVariant currentImage;
     Q_PROPERTY(QVariant currentImage MEMBER currentImage CONSTANT)
 
-    // QVariantSet all_features;
-    QVariantSet current_image_features;
-    Q_PROPERTY(QVariantList currentFeatures READ currentFeatures CONSTANT)
-    QVariantList currentFeatures() const
-    {
-        return setToList(current_image_features);
-    }
+    Q_INVOKABLE void runRebase(QString image, QJSValue callback);
 
     // change this to update filtered
     QVariantSet m_features;

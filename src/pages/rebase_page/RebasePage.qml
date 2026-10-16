@@ -11,6 +11,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FC
 
 import io.github.rfrench3.controllable as GP
+import io.github.rfrench3.bazzite_updater
 
 // TODO:
 // - improve controller support for selections. It can be navigated, but left/right should move to buttons to the left/right
@@ -139,6 +140,6 @@ AppPage {
 
     ConsoleDrawer {
         id: consoleDrawer
-        model: null
+        model: RebaseModel.consoleModel
     }
 }
