@@ -38,7 +38,8 @@ Q_ENUM_NS(ExitStatus)
 class Model : public QAbstractListModel
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_NAMED_ELEMENT(UpdateModel)
+
 public:
     explicit Model(QObject *parent = nullptr)
         : QAbstractListModel(parent)
