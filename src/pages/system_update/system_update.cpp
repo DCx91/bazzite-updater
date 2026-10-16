@@ -58,13 +58,8 @@ enum class Progress {
 };
 static Progress current_module = Progress::UNKNOWN;
 
-void SystemUpdateBackend::runUpdate(QJSValue callback = QJSValue())
+void SystemUpdateBackend::runUpdate(QJSValue callback = QJSValue(), QJSValue messageCallback = QJSValue())
 {
-    if (!callback.isCallable()) {
-        qDebug() << "Callback is not callable, command run refused";
-        return;
-    }
-
     m_updateStepsModel->clearData();
     current_module = Progress::UNKNOWN;
 
@@ -126,6 +121,13 @@ void SystemUpdateBackend::runUpdate(QJSValue callback = QJSValue())
         QString title = json.value(u"title"_s).toString();
 
         QString description = json.value(u"description"_s).toString();
+
+        if (current_module == Progress::SYSTEM) {
+            if (line.contains(u"Insufficient free space"_s) || line.contains(u"min-free-space-percent"_s)) {
+                messageCallback.call({i18n("There is not enough free space available for system updates.")});
+                m_updateStepsModel->updateData(UpdateStepsModules::SYSTEM, 0, 2, UpdateStepsNS::ExitStatus::ERROR);
+            }
+        }
 
         // If the output of Uupd improves, update this
         {

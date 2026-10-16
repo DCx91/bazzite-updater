@@ -73,6 +73,9 @@ Kirigami.Page {
                         else
                             showPassiveNotification(i18n("No reboot necessary."), Kirigami.short);
                     });
+                }, errorMessage => {
+                    errorDialog.subtitle = errorMessage;
+                    errorDialog.open();
                 });
             }
         },
@@ -92,6 +95,39 @@ Kirigami.Page {
             }
         }
     ]
+
+    AppDialog {
+        id: errorDialog
+        title: i18n("Update Error")
+        standardButtons: Kirigami.Dialog.NoButton
+
+        // TODO: test this with a controller
+        activeDialogParent: Window
+
+        subtitle: i18n("This will reboot the system.")
+
+        customFooterActions: [
+            Kirigami.Action {
+                id: errorDialogConfirm
+                text: i18n("Ok") + GP.Labels.spacer + GP.Labels.south
+
+                onTriggered: errorDialog.accept()
+            }
+        ]
+
+        function handleInput(buttonId, button_down) {
+            if (!button_down)
+                return;
+            switch (buttonId) {
+            case 0: // A
+                errorDialogConfirm.triggered();
+                break;
+            case 1: // B
+                errorDialogConfirm.triggered();
+                break;
+            }
+        }
+    }
 
     ColumnLayout {
         id: pageContents

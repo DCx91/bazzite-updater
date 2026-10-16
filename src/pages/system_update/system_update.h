@@ -62,7 +62,7 @@ public:
         return m_updateStepsModel;
     }
 
-    Q_INVOKABLE void runUpdate(QJSValue callback);
+    Q_INVOKABLE void runUpdate(QJSValue callback, QJSValue messageCallback);
 
     bool blockUpdate() const
     {
