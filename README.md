@@ -6,7 +6,7 @@
 
 <h1 align="center">Features</h1>
 
-<p>This is a convenient, easy-to-use interface for updating your Linux system.</p>
+<p>This is a convenient, easy-to-use interface for updating your Linux system. While primarily designed for Bazzite, it has been designed so that it can be easily integrated into any linux distro that meets its requirements. Feel free to ask if you are interested in implementing it!</p>
 
 - Simple and powerful
 - Full support for all input types (keyboard/mouse, controller, touchscreen)
@@ -24,9 +24,9 @@
 
 <h1 align="center">Requirements</h1>
 
-By default, this interface is configured to use bazzite's `uupd` system service for updating and `bazzite-rollback-helper` for rolling back updates.
+By default, this interface is configured to use bazzite's `uupd` system service for updating and `bazzite-rollback-helper` for rolling back updates. If you do not use these systems, you will need to edit `/etc/bazzite-updater/config.ini` to match your systems.
 
-- This is not currently tested with versions of kirigami and kirigamiaddons older than Fedora's latest version.
+- This is not currently tested with packages older than the latest within Fedora and Arch linux.
 
 <br>
 
