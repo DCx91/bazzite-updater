@@ -14,7 +14,7 @@ FormCardCollapsible {
     // TODO: The dropdown does not open smoothly the first time
 
     id: root
-    readonly property var osRelease: AppConfig.osReleaseVarMap()
+    readonly property var osRelease: AppData.osRelease
 
     buttonText: expanded ? i18nc("button label", "Hide os-release") : i18nc("button label", "Display os-release")
 

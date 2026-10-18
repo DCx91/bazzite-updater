@@ -215,10 +215,35 @@ Kirigami.Page {
                     const last_update = i18nc("label, last update to the system.", "Last Update") + ": ";
                     if (sessionStorage.updateCompleted)
                         return last_update + i18n("Right now!");
-                    if (OtherUtilsBackend.currentImage.load_successful)
-                        return last_update + OtherUtilsBackend.currentImage.datePretty["day"] + " " + OtherUtilsBackend.currentImage.datePretty["month"] + ", " + OtherUtilsBackend.currentImage.datePretty["year"];
+
+                    const date = getDate();
+
+                    if (date)
+                        return last_update + date;
 
                     return "";
+                }
+
+                function getDate(): string {
+                    // 8 digits starting with 202 or 203, not part of a longer digit run
+                    // TODO: fix this before the year 2040
+                    let match = /(?:^|\D)(20[23]\d{5})(?!\d)/.exec(AppData.osRelease["VERSION"]);
+                    if (!match)
+                        match = /(?:^|\D)(20[23]\d{5})(?!\d)/.exec(AppData.osRelease["VERSION_ID"]);
+
+                    if (!match)
+                        return "";
+
+                    const year = parseInt(match[1].slice(0, 4), 10);
+                    const month = parseInt(match[1].slice(4, 6), 10);
+                    const day = parseInt(match[1].slice(6, 8), 10);
+
+                    // Make sure the result is a valid date, not any 8-digit string that happens to start with 202/203
+                    const date = new Date(year, month - 1, day);
+                    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day)
+                        return "";
+
+                    return Qt.formatDate(date, "d MMMM yyyy");
                 }
             }
 

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <qcontainerfwd.h>
 #include <qguiapplication.h>
 #include <qjsengine.h>
+#include <qjsonobject.h>
 #include <qjsvalue.h>
 #include <qlist.h>
 #include <qmetaobject.h>
@@ -135,6 +137,17 @@ public:
     GpuDrivers gpu;
     void loadBestDrivers();
     Q_SIGNAL void gpuChanged();
+
+    //   /etc/os-release
+    Q_PROPERTY(QJsonObject osRelease READ getOsRelease NOTIFY osReleaseChanged)
+    QJsonObject osRelease;
+    bool osReleaseLoading = false;
+    const QJsonObject &getOsRelease() const
+    {
+        return osRelease;
+    }
+    Q_SIGNAL void osReleaseChanged();
+    void loadOsRelease();
 };
 inline static AppData *appData = AppData::instance();
 

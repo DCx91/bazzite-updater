@@ -1,4 +1,5 @@
 #include "data.h"
+#include <qcontainerfwd.h>
 #include <qtconcurrentrun.h>
 
 AppData::AppData(QObject *parent)
@@ -6,6 +7,7 @@ AppData::AppData(QObject *parent)
 {
     reloadOstree();
     loadBestDrivers();
+    loadOsRelease();
 };
 
 void AppData::loadBestDrivers()
@@ -66,8 +68,10 @@ void AppData::reloadOstree(QJSValue callback)
                   if (callback.isCallable())
                       callback.call();
               })
-        .onCanceled(this, [this]() {
+        .onCanceled(this, [this, callback]() {
             this->ostreeLoading = false;
+            if (callback.isCallable())
+                callback.call();
         });
 }
 
@@ -102,7 +106,13 @@ Ostree loadRpmOstree()
 Ostree loadBootc()
 {
     Ostree result;
+
     // TODO: bootc status needs root
+    //       Also review the aurora update script for handling this
+    //       bootc has a compatibility value which can be used to determine if bootc or rpm-ostree should be used
+    // https://github.com/get-aurora-dev/common/blob/f813004dd14804a674ea22f45dd538f0d4b56f08/system_files/shared/usr/share/ublue-os/just/update.just#L54
+    //
+    // also TODO: Recommend/enforce removing layered packages before a rebase
     const QJsonObject status = runJson(u"bootc"_s, {u"status"_s, u"--json"_s}).value(u"status"_s).toObject();
 
     // bootc reports up to three slots, each an object or null.
@@ -128,4 +138,52 @@ Ostree Ostree::load()
     if (!QStandardPaths::findExecutable(u"bootc"_s).isEmpty())
         return loadBootc();
     return {};
+}
+
+void AppData::loadOsRelease()
+{
+    if (osReleaseLoading)
+        return;
+
+    osReleaseLoading = true;
+    QtConcurrent::run([]() {
+        QJsonObject data = {};
+        auto file = QFile(u"/etc/os-release"_s);
+
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            while (!file.atEnd()) {
+                QByteArray arr = file.readLine();
+
+                auto line = QString::fromUtf8(arr).trimmed();
+
+                if (line.isEmpty() || line.startsWith(u'#'))
+                    continue;
+
+                int split = line.indexOf(u'=');
+                if (split == -1)
+                    continue;
+
+                auto key = line.left(split);
+                auto value = line.mid(split + 1);
+
+                // Remove surrounding quotations, if there are any
+                if (value.length() >= 2 && ((value.startsWith(u'"') && value.endsWith(u'"')) || (value.startsWith(u'\'') && value.endsWith(u'\'')))) {
+                    value = value.sliced(1, value.length() - 2);
+                }
+
+                data.insert(key, value);
+            }
+        }
+
+        return data;
+    })
+        .then(this,
+              [this](QJsonObject data) {
+                  this->osRelease = std::move(data);
+                  Q_EMIT osReleaseChanged();
+                  this->osReleaseLoading = false;
+              })
+        .onCanceled(this, [this]() {
+            this->osReleaseLoading = false;
+        });
 }
