@@ -56,8 +56,9 @@ void setup_theming();
 
 int main(int argc, char *argv[])
 {
-    const QString FULL_APP_DOMAIN = u"io.github.rfrench3.bazzite-updater"_s;
     bool UseFullscreen = false;
+
+    QApplication app(argc, argv);
 
     if (Utils::GAMESCOPE_SESSION) {
         /*
@@ -68,8 +69,7 @@ int main(int argc, char *argv[])
             Example: kde window rules to move the app to a certain display seem to break this scaling check
         */
         if (qEnvironmentVariableIsEmpty("QT_SCALE_FACTOR")) {
-            QGuiApplication screenGetter(argc, argv);
-            QScreen *screen = screenGetter.primaryScreen();
+            QScreen *screen = app.primaryScreen();
             const float height = screen->geometry().height();
             const float scale_factor = height / BASE_HEIGHT;
 
@@ -78,12 +78,12 @@ int main(int argc, char *argv[])
             if (scale_factor > 1.0)
                 final_scale *= scale_factor;
             qputenv("QT_SCALE_FACTOR", QByteArray::number(final_scale));
+            execv("/proc/self/exe", argv);
         }
 
         UseFullscreen = true;
     }
 
-    QApplication app(argc, argv);
     KirigamiAppDefaults::apply(&app);
 
     // exits early if the command line options are used
@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
 
     setup_theming();
 
+    const QString FULL_APP_DOMAIN = u"io.github.rfrench3.bazzite-updater"_s;
     KLocalizedString::setApplicationDomain("bazzite-updater");
     QCoreApplication::setOrganizationName(u"UniversalBlue"_s);
 
