@@ -46,14 +46,12 @@ StatefulApp.StatefulWindow {
 
     // Handle global drawer navigation for controllers
 
-    property var activeDialog: null
-
     Connections {
         target: GP.Gamepad
 
         function onButtonEvent(buttonId, button_down) {
-            if (root.activeDialog) {
-                root.activeDialog.handleInput(buttonId, button_down);
+            if (AppDialogManager.activeDialog) {
+                AppDialogManager.activeDialog.handleInput(buttonId, button_down);
                 return;
             }
 
@@ -112,8 +110,8 @@ StatefulApp.StatefulWindow {
             sequences: [StandardKey.Back, StandardKey.Close, "F1", "Ctrl+M", "Escape"]
             context: Qt.ApplicationShortcut
             onActivated: {
-                if (root.activeDialog)
-                    root.activeDialog.reject();
+                if (AppDialogManager.activeDialog)
+                    AppDialogManager.activeDialog.reject();
                 else
                     globalDrawer.drawerOpen = !globalDrawer.drawerOpen;
             }
@@ -122,10 +120,10 @@ StatefulApp.StatefulWindow {
         Shortcut {
             sequences: ["Return"]
             context: Qt.ApplicationShortcut
-            enabled: globalDrawer.drawerOpen || root.activeDialog
+            enabled: globalDrawer.drawerOpen || AppDialogManager.activeDialog
             onActivated: {
-                if (root.activeDialog) {
-                    root.activeDialog.accept();
+                if (AppDialogManager.activeDialog) {
+                    AppDialogManager.activeDialog.accept();
                 } else
                     globalDrawer.drawerOpen = false;
             }
@@ -235,7 +233,7 @@ StatefulApp.StatefulWindow {
                 enabled: !AppState.commandRunning
 
                 onTriggered: {
-                    rebootDialog.open();
+                    AppDialogManager.show(rebootDialog);
                 }
             },
             Kirigami.Action {
@@ -247,7 +245,7 @@ StatefulApp.StatefulWindow {
                     // A running command is always worth warning about, only the reminder is optional.
                     // TODO: improve logic for non-atomic systems
                     if (AppState.commandRunning || (!AppData.ostree.onLatestDeployment() && UserSettings.showRebootReminder)) {
-                        exitDialog.open();
+                        AppDialogManager.show(exitDialog);
                     } else
                         Qt.quit();
                 }
@@ -316,12 +314,10 @@ StatefulApp.StatefulWindow {
 
     AppDialog {
         id: rebootDialog
-        title: i18nc("@title:window", "Reboot System")
+        titleStart: i18nc("@title:window", "Reboot System")
         standardButtons: Kirigami.Dialog.NoButton
 
         enabled: !AppState.commandRunning
-
-        activeDialogParent: root
 
         subtitle: i18n("This will reboot the system.")
 
@@ -370,10 +366,8 @@ StatefulApp.StatefulWindow {
 
     AppDialog {
         id: exitDialog
-        title: i18n("Exit Application")
+        titleStart: i18n("Exit Application")
         standardButtons: Kirigami.Dialog.NoButton
-
-        activeDialogParent: root
 
         subtitle: {
             if (!AppState.commandRunning)

@@ -46,6 +46,9 @@ target_include_directories(bazzite-updater
     ${COMP_DIR}/kConfig
 )
 
+set_source_files_properties(${COMP_DIR}/AppDialogManager.qml PROPERTIES
+    QT_QML_SINGLETON_TYPE TRUE)
+
 ecm_target_qml_sources(bazzite-updater
     SOURCES
     ${PG_DIR}/Main.qml
@@ -60,6 +63,7 @@ ecm_target_qml_sources(bazzite-updater
     ${PG_DIR}/settings/Settings.qml
     ${PG_DIR}/rebase_page/RebasePage.qml
     ${COMP_DIR}/AppDialog.qml
+    ${COMP_DIR}/AppDialogManager.qml
     ${COMP_DIR}/AppPage.qml
     ${COMP_DIR}/AsyncLoader.qml
     ${COMP_DIR}/PageContentLayout.qml

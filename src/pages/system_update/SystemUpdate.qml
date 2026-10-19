@@ -75,7 +75,7 @@ Kirigami.Page {
                     });
                 }, errorMessage => {
                     errorDialog.subtitle = errorMessage;
-                    errorDialog.open();
+                    AppDialogManager.show(errorDialog);
                 });
             }
         },
@@ -98,11 +98,8 @@ Kirigami.Page {
 
     AppDialog {
         id: errorDialog
-        title: i18n("Update Error")
+        titleStart: i18n("Update Error")
         standardButtons: Kirigami.Dialog.NoButton
-
-        // TODO: test this with a controller
-        activeDialogParent: Window.window
 
         subtitle: i18n("This will reboot the system.")
 
