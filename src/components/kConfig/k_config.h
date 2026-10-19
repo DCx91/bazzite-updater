@@ -80,28 +80,14 @@ public: // singleton methods
     }
 
 public:
-    Q_PROPERTY(QJsonObject osAboutData MEMBER aboutOs CONSTANT)
-    Q_PROPERTY(QJsonObject osRelease MEMBER osRelease CONSTANT)
     Q_PROPERTY(QVariantList rebaseTargets MEMBER rebaseTargets CONSTANT)
     Q_PROPERTY(QVariantMap ini READ config CONSTANT)
 
-    void setupOsRelease(QFile &file);
-
-    QJsonObject aboutOs;
-    QJsonObject osRelease;
     QVariantList rebaseTargets;
-
-    // Full path for service-as-program.sh
-    QString serviceHelperScript;
 
     QVariantMap config() const
     {
         return configIni;
-    }
-
-    Q_INVOKABLE QVariantMap osReleaseVarMap() const
-    {
-        return osRelease.toVariantMap();
     }
 };
 
@@ -109,5 +95,3 @@ inline AppConfig *appConfig()
 {
     return AppConfig::instance();
 }
-
-QString findConfigFile(const QString &relativePath);

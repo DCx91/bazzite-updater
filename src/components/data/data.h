@@ -16,6 +16,11 @@
 
 using namespace Qt::StringLiterals;
 
+struct dataStatus {
+    bool loading = false;
+    bool succeeded = false;
+};
+
 namespace Gpu
 {
 Q_NAMESPACE
@@ -70,6 +75,7 @@ public:
     Q_PROPERTY(QStringList layeredPackages READ getLayeredPackages CONSTANT)
     Q_PROPERTY(bool isCurrent READ getIsCurrent CONSTANT)
     Q_PROPERTY(bool isStaged READ getIsStaged CONSTANT)
+    bool operator==(const OstreeDeployment &) const = default;
 };
 
 struct Ostree {
@@ -91,6 +97,7 @@ public:
     }
 
     static Ostree load();
+    bool operator==(const Ostree &) const = default;
 };
 
 // Asynchronously loads data
@@ -125,7 +132,7 @@ public:
         return ostree;
     }
     Ostree ostree;
-    bool ostreeLoading = false;
+    dataStatus ostreeStatus{};
     Q_INVOKABLE void reloadOstree(QJSValue callback = QJSValue());
     Q_SIGNAL void ostreeChanged();
 
@@ -141,14 +148,28 @@ public:
     //   /etc/os-release
     Q_PROPERTY(QJsonObject osRelease READ getOsRelease NOTIFY osReleaseChanged)
     QJsonObject osRelease;
-    bool osReleaseLoading = false;
+    dataStatus osReleaseStatus{};
     const QJsonObject &getOsRelease() const
     {
         return osRelease;
     }
     Q_SIGNAL void osReleaseChanged();
     void loadOsRelease();
+
+    // partially depends on os-release, so it runs in that same thread
+    Q_PROPERTY(QJsonObject aboutDataOs READ getAboutDataOs NOTIFY aboutDataOsChanged)
+    QJsonObject aboutDataOs;
+    dataStatus aboutDataOsStatus{};
+    const QJsonObject &getAboutDataOs() const
+    {
+        return aboutDataOs;
+    }
+    Q_SIGNAL void aboutDataOsChanged();
+    void loadAboutDataOs(const QJsonObject &osRelease); // only run after os-release is completed
 };
 inline static AppData *appData = AppData::instance();
 
 QJsonObject runJson(const QString &program, const QStringList &args);
+
+// (ex: u"bazzite-updater/config.ini"_s) Returns the full path to the config file that should be used.
+QString findConfigFile(const QString &relativePath);

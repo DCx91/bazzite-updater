@@ -2,10 +2,11 @@ import QtQuick
 import QtQuick.Controls // Required for grabScrollbar to find a scrollbar
 import org.kde.kirigamiaddons.formcard as FormCard
 import io.github.rfrench3.controllable as GP
+import io.github.rfrench3.bazzite_updater
 
 FormCard.AboutPage {
     id: page
-    title: GP.Labels.east + GP.Labels.spacer_large + i18nc("About (user's OS)", "About %1", AppConfig.osAboutData.displayName)
+    title: GP.Labels.east + GP.Labels.spacer_large + i18nc("About (user's OS)", "About %1", AppData.aboutDataOs.displayName)
 
     GP.PageNavigation {
         targetScrollbar: page.grabScrollbar(page)
@@ -24,5 +25,5 @@ FormCard.AboutPage {
 
     showLibraries: false
 
-    aboutData: AppConfig.osAboutData
+    aboutData: AppData.aboutDataOs
 }

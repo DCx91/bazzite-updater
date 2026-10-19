@@ -13,6 +13,7 @@
 #include <QStyleHints>
 #include <QUrl>
 
+#include "data.h"
 #include "version-bazzite-updater.h"
 #include <KAboutData>
 #include <KColorSchemeManager>
@@ -38,6 +39,7 @@
 #include <qqmlpropertymap.h>
 #include <qquickstyle.h>
 #include <qstylehints.h>
+#include <qtpreprocessorsupport.h>
 #include <unistd.h>
 
 #include "k_config.h"
@@ -122,6 +124,9 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(u"sessionStorage"_s, sessionStorage);
 
     engine.rootContext()->setContextProperty(u"UseFullscreen"_s, UseFullscreen);
+
+    // load AppData on startup instead of on first access
+    AppData::instance();
 
     return app.exec();
 }

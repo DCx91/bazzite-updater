@@ -207,7 +207,7 @@ StatefulApp.StatefulWindow {
                 onTriggered: pageStack.initialPage = Qt.resolvedUrl("Settings.qml")
             },
             Kirigami.Action {
-                text: i18nc("About (user's OS)", "About %1", AppConfig.osAboutData.displayName)
+                text: i18nc("About (user's OS)", "About %1", AppData.aboutDataOs.displayName)
                 icon.name: "help-about-symbolic"
 
                 checkable: true

@@ -102,7 +102,7 @@ Kirigami.Page {
         standardButtons: Kirigami.Dialog.NoButton
 
         // TODO: test this with a controller
-        activeDialogParent: Window
+        activeDialogParent: Window.window
 
         subtitle: i18n("This will reboot the system.")
 
@@ -148,7 +148,7 @@ Kirigami.Page {
                 Image {
                     anchors.fill: parent
 
-                    source: (AppConfig.osAboutData.programLogo) ? "file:/" + AppConfig.osAboutData.programLogo : "qrc:/fallbackLogo"
+                    source: (AppData.aboutDataOs.programLogo) ? "file:/" + AppData.aboutDataOs.programLogo : "qrc:/fallbackLogo"
 
                     sourceSize: Qt.size(width, height)
                     antialiasing: true
