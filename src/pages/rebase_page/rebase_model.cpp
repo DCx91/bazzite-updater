@@ -80,13 +80,16 @@ RebaseModel::RebaseModel()
             if (currentFound) {
                 auto currentFeatures = currentImage.toJsonObject().value(KeyFeatures).toArray();
 
+                bool currentGnome = currentFeatures.contains(u"gnome"_s);
                 bool currentKde = currentFeatures.contains(u"kde"_s);
+                bool imgGnome = imgFeatures.contains(u"gnome"_s);
                 bool imgKde = imgFeatures.contains(u"kde"_s);
 
-                if (currentKde != imgKde)
+                // hide gnome if kde, hide kde if gnome
+                if ((currentKde && imgGnome) || (currentGnome && imgKde))
                     continue;
 
-                if (img == currentImage)
+                if (currentFound && img.toObject().value(u"features"_s).toArray() == currentFeatures)
                     continue;
             }
 
@@ -138,6 +141,13 @@ void RebaseModel::runRebase(QString image, QJSValue callback = QJSValue())
         return;
     }
 
+    checkRebaseProgram();
+
+    if (rebaseProgram == UNDEFINED) {
+        callback.call({1});
+        return;
+    }
+
     auto onFinish = [=, this](int exit_code) {
         const auto conclude = [=](int code, bool command) {
             callback.call({code});
@@ -164,7 +174,59 @@ void RebaseModel::runRebase(QString image, QJSValue callback = QJSValue())
 
     appState.setRebaseRunning(true);
 
+    // TODO: ideally this would use run0
+    // https://github.com/bootc-dev/bootc/issues/2422
+    QStringList program{u"pkexec"_s};
+
+    if (rebaseProgram == RPM_OSTREE) {
+        program << u"rpm-ostree rebase %1"_s.arg(image);
+    } else {
+        if (image.contains(u"docker://"_s))
+            image = image.mid(image.indexOf(u"docker://"_s) + 9);
+        program << u"bootc switch %1"_s.arg(image);
+    }
+
     // TODO: potentially try the default "bazzite" password before prompting user, if possible?
-    // m_console->runProcess({u"run0"_s, u"bootc"_s, u"switch"_s, image}, onFinish, onError);
-    m_console->runProcess({u"sleep"_s, u"3"_s, u"&&"_s, u"echo"_s, image}, onFinish, onError);
+    m_console->runProcess(program, onFinish, onError);
+}
+
+// TODO: Move to src/components/data and make async
+void RebaseModel::checkRebaseProgram()
+{
+    const bool hasBootc = !QStandardPaths::findExecutable(QStringLiteral("bootc")).isEmpty();
+    const bool hasRpmOstree = !QStandardPaths::findExecutable(QStringLiteral("rpm-ostree")).isEmpty();
+
+    if (!hasBootc && !hasRpmOstree) {
+        rebaseProgram = UNDEFINED;
+        return;
+    }
+    if (hasBootc && !hasRpmOstree) {
+        rebaseProgram = BOOTC;
+        return;
+    }
+    if (!hasBootc && hasRpmOstree) {
+        rebaseProgram = RPM_OSTREE;
+        return;
+    }
+
+    // Avoids bootc status needing root privileges
+    const bool hasBootcHelper = !QStandardPaths::findExecutable(QStringLiteral("bootc-status-json")).isEmpty();
+
+    QProcess proc;
+
+    if (hasBootcHelper)
+        proc.start(QStringLiteral("bootc-status-json"));
+    else
+        proc.start(QStringLiteral("run0"), {QStringLiteral("bootc"), QStringLiteral("status"), QStringLiteral("--json")});
+
+    bool bootedIncompatible = false;
+    if (proc.waitForStarted() && proc.waitForFinished(-1) && proc.exitCode() == 0) {
+        const QByteArray out = proc.readAllStandardOutput();
+
+        const QJsonObject booted = QJsonDocument::fromJson(out).object().value(u"status").toObject().value(u"booted").toObject();
+        const QJsonValue incompatible = booted.value(u"incompatible");
+        bootedIncompatible = incompatible.isBool() && incompatible.toBool();
+    }
+
+    rebaseProgram = bootedIncompatible ? RPM_OSTREE : BOOTC;
 }

@@ -57,21 +57,6 @@ AppPage {
                 features: image.features
 
                 currentTag: image.currentTag
-
-                // TODO: this is likely not necessary
-                // If the given image's features are compatible with the current one, return true.
-                // For example, this would return false when the current image has kde and the given one has gnome.
-                function compatibleImage(features: list<string>): bool {
-                    let currentFeatures = image.features;
-
-                    if (features.includes("gnome"))
-                        return !currentFeatures.includes("kde");
-
-                    if (features.includes("kde"))
-                        return !currentFeatures.includes("gnome");
-
-                    return true;
-                }
             }
 
             FC.FormHeader {
@@ -99,18 +84,26 @@ AppPage {
 
                 GridLayout {
                     Layout.fillWidth: true
-                    columns: 3
+                    columns: 4
 
                     Repeater {
-                        model: content.allFeatures
+
+                        // If
+                        readonly property var filteredModel: {
+                            if (currentImage.features.includes("kde") || currentImage.features.includes("gnome"))
+                                return content.allFeatures.filter(f => (f !== "kde" && f !== "gnome"));
+                            else
+                                return content.allFeatures;
+                        }
+
+                        model: filteredModel
                         delegate: Button {
                             required property string modelData
                             text: modelData
                             Layout.fillWidth: true
                             checkable: true
                             flat: true
-
-                            enabled: currentImage.compatibleImage([modelData])
+                            visible: enabled
 
                             onCheckedChanged: {
                                 if (checked) {
@@ -132,8 +125,48 @@ AppPage {
                 model: RebaseModel.filtered
 
                 delegate: FCSystemImage {
+                    id: imageCard
                     Layout.topMargin: Kirigami.Units.mediumSpacing
+
+                    onTagClicked: tag => {
+                        rebaseDialog.imageRef = `${imageCard.url}/${imageCard.name}`;
+                        rebaseDialog.tag = tag;
+                        AppDialogManager.show(rebaseDialog);
+                    }
                 }
+            }
+        }
+    }
+
+    AppDialog {
+        id: rebaseDialog
+
+        property string imageRef: ""
+        property string tag: ""
+
+        titleStart: i18n("Confirm rebase")
+        subtitle: i18n("Rebase to %1:%2? This will take a long time, and you will need to restart afterwards to apply the changes.\n\nYou may need to input your password multiple times to proceed.", imageRef, tag)
+        standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
+
+        onAccepted: {
+            RebaseModel.runRebase(`${imageRef}:${tag}`, exit_code => {
+                if (exit_code === 0)
+                    showPassiveNotification(i18n("The rebase succeeded! Restart to apply changes."));
+                else
+                    showPassiveNotification(i18n("The rebase failed. Check the console for more information."));
+            });
+        }
+
+        function handleInput(buttonId, button_down) {
+            if (!button_down)
+                return;
+            switch (buttonId) {
+            case 0: // A
+                rebaseDialog.accept();
+                break;
+            case 1: // B
+                rebaseDialog.reject();
+                break;
             }
         }
     }

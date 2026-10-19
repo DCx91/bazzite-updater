@@ -17,6 +17,15 @@
 #include <qtmetamacros.h>
 #include <qvariant.h>
 
+/*
+ * TODO: current issues
+ * - bootc switch silently continues in the background on app close
+ * - rpm-ostree not yet tested
+ * - uses pkexec, run0 would be greatly preferable
+ * - creates multiple password prompts (check bootc status for bootc compatibility, runs bootc/rpm-ostree rebase which need another)
+ * - controllers need to navigate up/down to go between the left/right elements in the filters list
+ */
+
 // Required for QVariantSet.contains(other QVariantSet) to work
 inline size_t qHash(const QVariant &key, size_t seed = 0) noexcept
 {
@@ -73,6 +82,13 @@ public:
     QVariant currentImage;
     Q_PROPERTY(QVariant currentImage MEMBER currentImage CONSTANT)
 
+    enum RebaseProgram {
+        UNDEFINED,
+        BOOTC,
+        RPM_OSTREE
+    };
+    RebaseProgram rebaseProgram = UNDEFINED;
+    void checkRebaseProgram();
     Q_INVOKABLE void runRebase(QString image, QJSValue callback);
 
     // change this to update filtered
