@@ -6,10 +6,17 @@
 #include "k_config.h"
 #include "other_utils.h"
 #include "utils.h"
+#include <qguiapplication.h>
+#include <qhashfunctions.h>
+#include <qjsengine.h>
 #include <qjsonarray.h>
+#include <qjsondocument.h>
 #include <qjsonobject.h>
 #include <qjsonvalue.h>
 #include <qjsvalue.h>
+#include <qprocess.h>
+#include <qqmlengine.h>
+#include <qtconcurrentrun.h>
 #include <qvariant.h>
 
 inline const QString KeyUrl = u"url"_s;
@@ -229,4 +236,38 @@ void RebaseModel::checkRebaseProgram()
     }
 
     rebaseProgram = bootedIncompatible ? RPM_OSTREE : BOOTC;
+}
+
+void RebaseModel::getAllTags(QString url, QJSValue callback)
+{
+    if (!url.contains(u"docker://"_s) || QStandardPaths::findExecutable(QStringLiteral("skopeo")).isEmpty()) {
+        callback.call({1});
+        return;
+    }
+
+    url = url.mid(url.indexOf(u"docker://"_s));
+
+    QtConcurrent::run([url]() {
+        QProcess proc;
+        proc.start(u"skopeo"_s, {u"list-tags"_s, url});
+        proc.waitForFinished();
+        auto doc = QJsonDocument::fromJson(proc.readAllStandardOutput());
+
+        auto result = doc.object().value(u"Tags"_s).toArray();
+
+        for (auto it = result.begin(); it != result.end();) {
+            if (it->toString().startsWith(u"sha256"_s)) {
+                it = result.erase(it); // Erase returns the iterator to the next element
+            } else {
+                ++it;
+            }
+        }
+
+        return result;
+    }).then(this, [callback](QJsonArray result) {
+        QJsonDocument doc(result);
+        QByteArray jsonString = doc.toJson(QJsonDocument::Compact);
+
+        callback.call(QJSValueList({QString::fromUtf8(jsonString)}));
+    });
 }

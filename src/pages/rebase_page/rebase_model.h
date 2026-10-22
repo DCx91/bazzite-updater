@@ -100,4 +100,7 @@ public:
     }
     void setFeatures(QVariantList val);
     Q_SIGNAL void featuresChanged();
+
+    // use skopeo list-tags and trim sha256 entries
+    Q_INVOKABLE void getAllTags(QString url, QJSValue callback = QJSValue());
 };
