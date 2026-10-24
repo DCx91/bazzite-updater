@@ -198,5 +198,8 @@ void setup_theming()
 
         QQuickStyle::setStyle(u"org.kde.breeze"_s);
         new Utils::DbusListener(qGuiApp);
+    } else {
+        // KDE session: Plasma owns the scheme, just clear any scheme left behind by a Game Mode session
+        Utils::applyColorScheme();
     }
 }

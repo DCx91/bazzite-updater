@@ -33,6 +33,10 @@ const bool KDE_SESSION = qEnvironmentVariable("XDG_CURRENT_DESKTOP").trimmed().t
 
 void startProcess(QProcess *process, const QStringList &command);
 
+// Applies the color scheme for the current session. Pass the xdg-desktop-portal value if you already have it,
+// otherwise it is read here.
+void applyColorScheme(uint portalScheme = NO_SCHEME);
+
 // TODO: This was necessary to force the app to respect color schemes outside of KDE.
 //       Ideally, this entire class wouldn't need to exist.
 class DbusListener : public QObject
