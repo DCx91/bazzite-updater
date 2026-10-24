@@ -19,6 +19,7 @@ struct Settings {
     bool showRebootReminder = true;
     bool preferFullscreen = false;
     bool preferConsole = false;
+    bool forceDarkMode = false;
 
     // allow settingsObj1 == settingsObj2 comparisons
     bool operator==(const Settings &) const = default;
@@ -63,6 +64,9 @@ public:
     // Whether the console panels should start in the opened state
     Q_PROPERTY(bool preferConsole READ preferConsole WRITE setPreferConsole NOTIFY preferConsoleChanged)
 
+    // Always use the dark color scheme, regardless of what the desktop/portal reports
+    Q_PROPERTY(bool forceDarkMode READ forceDarkMode WRITE setForceDarkMode NOTIFY forceDarkModeChanged)
+
     // Whether any settings differ from their default setting
     Q_PROPERTY(bool isDefault READ isDefault NOTIFY isDefaultChanged)
 
@@ -87,6 +91,13 @@ public:
 
     void setPreferConsole(bool prefer);
 
+    bool forceDarkMode() const
+    {
+        return settings.forceDarkMode;
+    }
+
+    void setForceDarkMode(bool force);
+
     bool isDefault() const
     {
         return settings == defaults;
@@ -99,6 +110,8 @@ public:
     Q_SIGNAL void preferFullscreenChanged();
 
     Q_SIGNAL void preferConsoleChanged();
+
+    Q_SIGNAL void forceDarkModeChanged();
 
     Q_SIGNAL void isDefaultChanged();
 

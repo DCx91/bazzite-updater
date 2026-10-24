@@ -33,6 +33,10 @@ const bool KDE_SESSION = qEnvironmentVariable("XDG_CURRENT_DESKTOP").trimmed().t
 
 void startProcess(QProcess *process, const QStringList &command);
 
+// Picks BreezeDark/BreezeLight from (in order): the user's "force dark" setting, the gamescope session, the
+// xdg-desktop-portal color-scheme value. Pass the portal value if you already have it, otherwise it is read here.
+void applyColorScheme(uint portalScheme = NO_SCHEME);
+
 // TODO: This was necessary to force the app to respect color schemes outside of KDE.
 //       Ideally, this entire class wouldn't need to exist.
 class DbusListener : public QObject

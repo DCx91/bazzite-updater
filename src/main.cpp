@@ -43,6 +43,7 @@
 #include <unistd.h>
 
 #include "k_config.h"
+#include "user_settings.h"
 #include "utils.h"
 
 inline constexpr float BASE_HEIGHT = 1080.0;
@@ -198,5 +199,8 @@ void setup_theming()
 
         QQuickStyle::setStyle(u"org.kde.breeze"_s);
         new Utils::DbusListener(qGuiApp);
+    } else {
+        // KDE session: Plasma owns the scheme unless the user override is on
+        Utils::applyColorScheme();
     }
 }

@@ -54,6 +54,22 @@ FC.FormCardPage {
         FormDelegateSeparatorFixed {}
 
         FC.FormSwitchDelegate {
+            text: i18n("Always use dark theme")
+            description: i18n("Use the dark color scheme even if the system does not request it.")
+
+            checked: UserSettings.forceDarkMode
+
+            onToggled: {
+                UserSettings.forceDarkMode = checked;
+
+                // Assigning to checked drops the binding, put it back
+                checked = Qt.binding(() => UserSettings.forceDarkMode);
+            }
+        }
+
+        FormDelegateSeparatorFixed {}
+
+        FC.FormSwitchDelegate {
             text: i18n("Default fullscreen state")
             description: i18n("Should the application launch in fullscreen mode?")
 

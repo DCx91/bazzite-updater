@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "user_settings.h"
+#include "utils.h"
 #include <kconfig.h>
 #include <kconfiggroup.h>
 #include <ksharedconfig.h>
@@ -13,6 +14,7 @@ UserSettings::UserSettings()
     settings.showRebootReminder = m_group.readEntry("showRebootReminder", defaults.showRebootReminder);
     settings.preferFullscreen = m_group.readEntry("preferFullscreen", defaults.preferFullscreen);
     settings.preferConsole = m_group.readEntry("preferConsole", defaults.preferConsole);
+    settings.forceDarkMode = m_group.readEntry("forceDarkMode", defaults.forceDarkMode);
 }
 
 void UserSettings::setShowRebootReminder(bool show)
@@ -54,9 +56,26 @@ void UserSettings::setPreferConsole(bool prefer)
     Q_EMIT isDefaultChanged();
 }
 
+void UserSettings::setForceDarkMode(bool force)
+{
+    if (settings.forceDarkMode == force)
+        return;
+
+    settings.forceDarkMode = force;
+    m_group.writeEntry("forceDarkMode", force);
+    m_group.sync();
+
+    // Apply immediately, no restart needed
+    Utils::applyColorScheme();
+
+    Q_EMIT forceDarkModeChanged();
+    Q_EMIT isDefaultChanged();
+}
+
 void UserSettings::restoreDefaults()
 {
     setShowRebootReminder(defaults.showRebootReminder);
     setPreferFullscreen(defaults.preferFullscreen);
     setPreferConsole(defaults.preferConsole);
+    setForceDarkMode(defaults.forceDarkMode);
 }

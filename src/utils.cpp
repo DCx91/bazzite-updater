@@ -2,18 +2,23 @@
 // SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 
 #include "utils.h"
+#include "user_settings.h"
 #include <qcontainerfwd.h>
 #include <qguiapplication.h>
 #include <qlogging.h>
 #include <qprocess.h>
 
+#include <KColorScheme>
 #include <KColorSchemeManager>
+#include <KConfigGroup>
+#include <KSharedConfig>
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QDBusVariant>
 #include <QIcon>
 
 #include <QPalette>
+#include <optional>
 
 namespace Utils
 {
@@ -39,35 +44,99 @@ DbusListener::DbusListener(QObject *parent)
                                           SLOT(onPortalSettingChanged(QString, QString, QDBusVariant)));
 }
 
-void DbusListener::initSetColorScheme()
+static uint readPortalColorScheme()
 {
     QDBusInterface portal(u"org.freedesktop.portal.Desktop"_s,
                           u"/org/freedesktop/portal/desktop"_s,
                           u"org.freedesktop.portal.Settings"_s,
                           QDBusConnection::sessionBus());
 
-    if (!portal.isValid()) {
-        return;
-    }
+    if (!portal.isValid())
+        return NO_SCHEME;
 
     QDBusReply<QDBusVariant> reply = portal.call(u"Read"_s, u"org.freedesktop.appearance"_s, u"color-scheme"_s);
 
-    if (!reply.isValid()) {
+    if (!reply.isValid())
+        return NO_SCHEME;
+
+    // org.freedesktop.portal.Settings returns a variant containing another variant (v -> v -> uint)
+    return reply.value().variant().value<QDBusVariant>().variant().toUInt();
+}
+
+// The desktop's color scheme is stored in ~/.config/kdeglobals, which Game Mode sessions can still read.
+// Returns nullopt if no scheme has been written there (e.g. non-KDE images).
+static std::optional<bool> systemPrefersDark()
+{
+    const auto globals = KSharedConfig::openConfig(u"kdeglobals"_s, KConfig::SimpleConfig);
+    if (!globals->hasGroup(u"Colors:Window"_s))
+        return std::nullopt;
+
+    const QPalette palette = KColorScheme::createApplicationPalette(globals);
+    return palette.color(QPalette::Window).lightness() < 128;
+}
+
+void applyColorScheme(uint portalScheme)
+{
+    static bool s_overridden = false;
+
+    const bool forceDark = UserSettings::instance()->forceDarkMode();
+
+    if (KDE_SESSION) {
+        // Plasma manages the scheme itself, only step in while the user override is on
+        if (forceDark) {
+            KColorSchemeManager::instance()->activateSchemeId(u"BreezeDark"_s);
+            s_overridden = true;
+        } else {
+            // Game Mode runs save their scheme in this app's own config, and KColorSchemeManager restores it on the
+            // next launch, so a Game Mode session would otherwise leave the desktop app stuck on BreezeDark.
+            KConfigGroup ui(KSharedConfig::openConfig(), u"UiSettings"_s);
+            if (ui.hasKey("ColorScheme")) {
+                ui.deleteEntry("ColorScheme");
+                ui.sync();
+                s_overridden = true;
+            }
+
+            if (s_overridden) {
+                // empty id = follow the system scheme
+                KColorSchemeManager::instance()->activateSchemeId(QString());
+                s_overridden = false;
+            }
+        }
         return;
     }
 
-    // org.freedesktop.portal.Settings returns a variant containing another variant (v -> v -> uint)
-    const auto colorScheme = reply.value().variant().value<QDBusVariant>().variant().toUInt();
+    bool dark = true;
 
-    // Force dark theme for gamescope session
-    if (colorScheme == 1 || GAMESCOPE_SESSION) {
-        KColorSchemeManager::instance()->activateSchemeId(u"BreezeDark"_s);
-    } else {
-        KColorSchemeManager::instance()->activateSchemeId(u"BreezeLight"_s);
+    if (!forceDark) {
+        if (GAMESCOPE_SESSION) {
+            // Follow the desktop's theme in Game Mode too. If it can't be read, keep the old default of dark.
+            if (const auto prefersDark = systemPrefersDark()) {
+                dark = *prefersDark;
+            } else {
+                if (portalScheme == NO_SCHEME)
+                    portalScheme = readPortalColorScheme();
+                dark = (portalScheme == NO_SCHEME) ? true : (portalScheme == 1);
+            }
+        } else {
+            if (portalScheme == NO_SCHEME)
+                portalScheme = readPortalColorScheme();
+
+            // Portal unavailable and nothing forcing a scheme: leave the default alone
+            if (portalScheme == NO_SCHEME)
+                return;
+
+            dark = (portalScheme == 1);
+        }
     }
-    QIcon::setThemeName(u"breeze"_s);
 
-    prevColorScheme = colorScheme;
+    KColorSchemeManager::instance()->activateSchemeId(dark ? u"BreezeDark"_s : u"BreezeLight"_s);
+    QIcon::setThemeName(u"breeze"_s);
+}
+
+void DbusListener::initSetColorScheme()
+{
+    applyColorScheme();
+    prevColorScheme = readPortalColorScheme();
 }
 
 void DbusListener::onPortalSettingChanged(const QString &nameSpace, const QString &key, const QDBusVariant &value)
@@ -79,13 +148,7 @@ void DbusListener::onPortalSettingChanged(const QString &nameSpace, const QStrin
             return;
 
         prevColorScheme = colorScheme;
-
-        if (colorScheme == 1) {
-            KColorSchemeManager::instance()->activateSchemeId(u"BreezeDark"_s);
-        } else {
-            KColorSchemeManager::instance()->activateSchemeId(u"BreezeLight"_s);
-        }
-        QIcon::setThemeName(u"breeze"_s);
+        applyColorScheme(colorScheme);
     }
 }
 }
