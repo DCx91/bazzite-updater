@@ -85,87 +85,38 @@ FormCardCollapsible {
         }
     }
 
-    function formatRssDate(dateString) {
-        let date = new Date(dateString);
-
-        // Fallback if the date string is malformed
+    function formatRssDate(dateString: string): string {
+        const date = new Date(dateString);
         if (isNaN(date.getTime())) {
             return dateString;
         }
 
-        const months = [i18n("January"), i18n("February"), i18n("March"), i18n("April"), i18n("May"), i18n("June"), i18n("July"), i18n("August"), i18n("September"), i18n("October"), i18n("November"), i18n("December")];
+        const now = new Date();
+        const locale = Qt.locale();
 
-        let day = date.getDate();
-        let month = months[date.getMonth()];
-        let year = date.getFullYear();
+        const dateFormat = (date.getFullYear() === now.getFullYear()) ? "d MMMM" : "d MMMM yyyy";
+        const absoluteDate = locale.toString(date, dateFormat);
 
-        let now = new Date();
-        let diffSeconds = Math.floor((now - date) / 1000);
-        let relativeTime = "";
+        const diff = Math.floor((now - date) / 1000);
+        const MIN = 60, HOUR = 3600, DAY = 86400, MONTH = DAY * 30, YEAR = DAY * 365;
 
-        let absoluteDate = day + " " + month;
-        if (year !== now.getFullYear()) {
-            absoluteDate += " " + year;
+        let relative;
+        if (diff < 0) {
+            relative = i18nc("elapsed time", "in the future");
+        } else if (diff < MIN) {
+            relative = i18nc("elapsed time", "just now");
+        } else if (diff < HOUR) {
+            relative = i18ncp("elapsed time", "%1 minute ago", "%1 minutes ago", Math.floor(diff / MIN));
+        } else if (diff < DAY) {
+            relative = i18ncp("elapsed time", "%1 hour ago", "%1 hours ago", Math.floor(diff / HOUR));
+        } else if (diff < MONTH) {
+            relative = i18ncp("elapsed time", "%1 day ago", "%1 days ago", Math.floor(diff / DAY));
+        } else if (diff < YEAR) {
+            relative = i18ncp("elapsed time", "%1 month ago", "%1 months ago", Math.floor(diff / MONTH));
+        } else {
+            relative = i18ncp("elapsed time", "%1 year ago", "%1 years ago", Math.floor(diff / YEAR));
         }
 
-        function createRes(relativeTime) {
-            return absoluteDate + " (" + relativeTime + ")";
-        }
-
-        function minutesToSeconds(time) {
-            return time * 60;
-        }
-
-        function hoursToSeconds(time) {
-            return minutesToSeconds(time * 60);
-        }
-
-        function daysToSeconds(time) {
-            return hoursToSeconds(time * 24);
-        }
-
-        function monthsToSeconds(time) {
-            return daysToSeconds(time * 30);
-        }
-
-        function yearsToSeconds(time) {
-            return daysToSeconds(time * 365);
-        }
-
-        if (diffSeconds < 0) {
-            return createRes(i18n("in the future"));
-        }
-
-        if (diffSeconds < minutesToSeconds(1)) {
-            return createRes(i18n("just now"));
-        }
-
-        if (diffSeconds < hoursToSeconds(1)) {
-            let mins = Math.floor(diffSeconds / minutesToSeconds(1));
-            let relativeTime = mins + (mins === 1 ? " " + i18n("minute ago") : " " + i18n("minutes ago"));
-            return createRes(relativeTime);
-        }
-
-        if (diffSeconds < daysToSeconds(1)) {
-            let hours = Math.floor(diffSeconds / hoursToSeconds(1));
-            let relativeTime = hours + (hours === 1 ? " " + i18n("hour ago") : " " + i18n("hours ago"));
-            return createRes(relativeTime);
-        }
-
-        if (diffSeconds < monthsToSeconds(1)) {
-            let days = Math.floor(diffSeconds / daysToSeconds(1));
-            let relativeTime = days + (days === 1 ? " " + i18n("day ago") : " " + i18n("days ago"));
-            return createRes(relativeTime);
-        }
-
-        if (diffSeconds < yearsToSeconds(1)) {
-            let mths = Math.floor(diffSeconds / monthsToSeconds(1));
-            let relativeTime = mths + (mths === 1 ? " " + i18n("month ago") : " " + i18n("months ago"));
-            return createRes(relativeTime);
-        }
-
-        let yrs = Math.floor(diffSeconds / yearsToSeconds(1));
-        relativeTime = yrs + (yrs === 1 ? " " + i18n("year ago") : " " + i18n("years ago"));
-        return createRes(relativeTime);
+        return i18nc("absolute date followed by relative time, e.g. 5 March (2 days ago)", "%1 (%2)", absoluteDate, relative);
     }
 }
