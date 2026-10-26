@@ -22,6 +22,10 @@ FC.FormCard {
     property bool hasFetched: false
     property real maxListHeight: KG.Units.gridUnit * 16
 
+    property string fetchTagsButtonText: i18n("Fetch all tags")
+
+    // Entry one: the "fetch tags" button, all other entries are actual tags.
+    // Start with the pre-defined tags, use skopeo to add list entries for each tag afterwards
     property list<var> tagsSorted: {
         let sort = [
             {
@@ -43,11 +47,13 @@ FC.FormCard {
 
     function fetchAllTags(): void {
         fetching = true;
+        root.fetchTagsButtonText = i18n("Fetching tags");
         RebaseModel.getAllTags(`${url}/${name}`, result => {
             fetching = false;
             hasFetched = true;
             if (result === 1) {
                 console.log("skopeo error");
+                root.fetchTagsButtonText = i18n("Failed to fetch tags.");
                 return;
             }
             let allTags = JSON.parse(result);
@@ -107,7 +113,7 @@ FC.FormCard {
                 Component {
                     id: fetchTagsButton
                     FC.FormButtonDelegate {
-                        text: root.fetching ? i18n("Fetching tags") : i18n("Fetch all tags")
+                        text: root.fetchTagsButtonText
                         enabled: !root.hasFetched && !root.fetching
                         onClicked: root.fetchAllTags()
                     }
@@ -123,11 +129,6 @@ FC.FormCard {
                     }
                 }
 
-                /* TODO: FIXME:
-                    - scrolling prioritizes the page over the tag region
-                    - controller/tab navigation order and scrolling
-
-                */
                 Component {
                     id: tagsCollapsible
                     FormDelegateCollapsible {

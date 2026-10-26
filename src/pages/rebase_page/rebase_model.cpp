@@ -251,6 +251,10 @@ void RebaseModel::getAllTags(QString url, QJSValue callback)
         QProcess proc;
         proc.start(u"skopeo"_s, {u"list-tags"_s, url});
         proc.waitForFinished();
+
+        if (proc.exitCode() != 0)
+            return QJsonArray();
+
         auto doc = QJsonDocument::fromJson(proc.readAllStandardOutput());
 
         auto result = doc.object().value(u"Tags"_s).toArray();
@@ -265,9 +269,13 @@ void RebaseModel::getAllTags(QString url, QJSValue callback)
 
         return result;
     }).then(this, [callback](QJsonArray result) {
-        QJsonDocument doc(result);
-        QByteArray jsonString = doc.toJson(QJsonDocument::Compact);
+        if (result.isEmpty())
+            callback.call({1});
+        else {
+            QJsonDocument doc(result);
+            QByteArray jsonString = doc.toJson(QJsonDocument::Compact);
 
-        callback.call(QJSValueList({QString::fromUtf8(jsonString)}));
+            callback.call(QJSValueList({QString::fromUtf8(jsonString)}));
+        }
     });
 }

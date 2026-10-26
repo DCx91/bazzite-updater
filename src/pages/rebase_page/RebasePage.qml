@@ -15,8 +15,10 @@ import io.github.rfrench3.bazzite_updater
 
 // TODO:
 // - improve controller support for selections. It can be navigated, but left/right should move to buttons to the left/right
-// - finish frontend
-// - begin/finish backend
+// - formcard separators are weird and need to be fixed
+// - scrolling prioritizes the page over the tag region
+// - controller/tab navigation order and scrolling and ensuring selected item stays displayed
+// - the buttons on the rebase tag vs rebase tags list should be significantly different
 
 AppPage {
     id: page
